@@ -1,0 +1,626 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--accent:#3b82f6;--accent2:#10b981;--danger:#ef4444;--warn:#f59e0b;--dark:#0a0e1a;--surface:#111827;--surface2:#1f2937;--border:#2d3748;--text:#e0e6f0;--muted:#6b7280}
+.app{display:flex;flex-direction:column;height:100vh;min-height:640px;background:var(--dark);font-family:'Courier New',monospace;color:var(--text)}
+.topbar{display:flex;align-items:center;background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;height:52px;gap:16px;flex-shrink:0}
+.logo-badge{width:32px;height:32px;background:linear-gradient(135deg,#3b82f6,#10b981);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.logo-text strong{font-size:12px;color:#fff;letter-spacing:.5px;display:block;line-height:1.2}
+.logo-text span{font-size:9px;color:var(--muted)}
+.nav{display:flex;gap:2px;flex:1;padding-left:20px}
+.nav-btn{background:none;border:none;color:var(--muted);font-family:inherit;font-size:11px;padding:5px 14px;cursor:pointer;border-radius:5px;transition:.15s;text-transform:uppercase;letter-spacing:.5px}
+.nav-btn:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nav-btn.active{color:var(--accent);border-bottom:2px solid var(--accent);border-radius:0;background:rgba(59,130,246,.08)}
+.clock-live{color:#10b981;font-size:11px;margin-left:auto}
+.content{flex:1;overflow:auto;padding:14px;display:none}
+.content.active{display:flex;flex-direction:column;gap:12px}
+
+/* PANEL layout */
+.panel-top{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-card.blue::before{background:#3b82f6}.stat-card.green::before{background:#10b981}
+.stat-card.warn::before{background:#f59e0b}.stat-card.danger::before{background:#ef4444}
+.stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.stat-val{font-size:22px;color:#fff;font-weight:700}
+.stat-sub{font-size:9px;color:var(--muted);margin-top:2px}
+
+/* MAP */
+.map-section{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:9px;overflow:hidden;position:relative;min-height:280px}
+.map-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)}
+.map-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.map-live-badge{display:flex;align-items:center;gap:5px;font-size:9px;color:#10b981}
+.pulse-dot{width:6px;height:6px;border-radius:50%;background:#10b981;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.map-canvas{width:100%;height:100%;display:block}
+
+/* bottom row */
+.panel-bottom{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.info-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px}
+.card-title{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px}
+.alert-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(45,55,72,.4);font-size:11px}
+.alert-item:last-child{border-bottom:none}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot.green{background:#10b981}.dot.warn{background:#f59e0b}.dot.danger{background:#ef4444}.dot.blue{background:#3b82f6}
+.drone-mini{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(45,55,72,.4);font-size:11px}
+.drone-mini:last-child{border-bottom:none}
+.bat-mini{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}
+.bat-bar-mini{width:40px;height:5px;background:#1f2937;border-radius:3px;overflow:hidden}
+.bat-fill-mini{height:100%;border-radius:3px}
+
+/* Other tabs */
+.tab-content{padding:0}
+.toolbar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.search-box{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 11px;color:#fff;font-family:inherit;font-size:11px;outline:none}
+.search-box:focus{border-color:var(--accent)}
+.btn{background:var(--surface);border:1px solid var(--border);border-radius:7px;color:#fff;font-family:inherit;font-size:10px;padding:7px 12px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:5px;letter-spacing:.3px}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.primary:hover{background:#2563eb}
+.btn.success{background:var(--accent2);border-color:var(--accent2);color:#fff}.btn.success:hover{background:#059669}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.8px;background:rgba(255,255,255,.02)}
+td{padding:9px 12px;border-bottom:1px solid rgba(45,55,72,.4);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:600;letter-spacing:.3px}
+.badge.en-vuelo{background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)}
+.badge.entregado{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3)}
+.badge.pendiente{background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3)}
+.badge.cancelado{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.icon-btn{background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);padding:4px 7px;cursor:pointer;font-size:10px;transition:.15s}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+.icon-btn.del:hover{border-color:var(--danger);color:var(--danger)}
+.drones-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.drone-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px}
+.drone-id{font-size:13px;font-weight:700;color:#fff}.drone-model{font-size:9px;color:var(--muted);margin-top:1px}
+.bat-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin:8px 0 4px}
+.bat-fill{height:100%;border-radius:3px;transition:.3s}
+.bat-text{font-size:9px;color:var(--muted)}
+.inv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.inv-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px}
+.inv-name{font-size:12px;font-weight:700;color:#fff;margin-bottom:2px}
+.inv-cat{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.inv-row{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px}
+.inv-row span:last-child{color:#fff}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:100}
+.modal-overlay.open{display:flex}
+.modal{background:#1a2235;border:1px solid var(--border);border-radius:11px;padding:22px;width:400px;max-width:95vw}
+.modal-bar{height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));margin:-22px -22px 18px;border-radius:11px 11px 0 0}
+.modal h3{font-size:13px;color:#fff;margin-bottom:16px;letter-spacing:.5px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px}
+.field input,.field select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:#fff;font-family:inherit;font-size:11px;outline:none}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field select option{background:#1f2937}
+.modal-actions{display:flex;gap:8px;margin-top:16px}
+.modal-actions .btn{flex:1;justify-content:center;font-size:11px}
+.modal-info{font-size:9px;color:var(--muted);margin-top:10px;display:flex;align-items:center;gap:5px;padding:7px 9px;background:rgba(239,68,68,.08);border-radius:5px;border:1px solid rgba(239,68,68,.2)}
+</style>
+
+<div class="app">
+<div class="topbar">
+  <div class="logo-badge">LD</div>
+  <div class="logo-text"><strong>LogiDrone-UCC</strong><span>Operación Bahía Santa Marta</span></div>
+  <nav class="nav">
+    <button class="nav-btn active" onclick="switchTab('panel',this)">Panel</button>
+    <button class="nav-btn" onclick="switchTab('pedidos',this)">Pedidos</button>
+    <button class="nav-btn" onclick="switchTab('drones',this)">Drones</button>
+    <button class="nav-btn" onclick="switchTab('inventario',this)">Inventario</button>
+  </nav>
+  <div class="clock-live" id="clock">00:00:00</div>
+</div>
+
+<!-- PANEL -->
+<div class="content active" id="tab-panel">
+  <div class="panel-top">
+    <div class="stat-card blue"><div class="stat-label">Pedidos activos</div><div class="stat-val" id="stat-ped">3</div><div class="stat-sub">en operación</div></div>
+    <div class="stat-card green"><div class="stat-label">Drones en vuelo</div><div class="stat-val" id="stat-vuelo">2</div><div class="stat-sub">de <span id="stat-tot">5</span> totales</div></div>
+    <div class="stat-card warn"><div class="stat-label">Batería baja</div><div class="stat-val" id="stat-bat">1</div><div class="stat-sub">&lt; 30%</div></div>
+    <div class="stat-card danger"><div class="stat-label">Stock crítico</div><div class="stat-val" id="stat-stk">2</div><div class="stat-sub">&lt; 5 unidades</div></div>
+  </div>
+
+  <!-- LIVE MAP -->
+  <div class="map-section" style="flex:1;min-height:300px">
+    <div class="map-header">
+      <span class="map-title">Mapa de vuelo — Bahía Santa Marta</span>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div class="map-live-badge"><div class="pulse-dot"></div>EN VIVO</div>
+        <div style="font-size:9px;color:var(--muted)" id="map-timestamp">Actualizado hace 0s</div>
+      </div>
+    </div>
+    <canvas class="map-canvas" id="mapCanvas"></canvas>
+  </div>
+
+  <div class="panel-bottom">
+    <div class="info-card">
+      <div class="card-title">Actividad reciente</div>
+      <div id="activity-log"></div>
+    </div>
+    <div class="info-card">
+      <div class="card-title">Estado de flota</div>
+      <div id="fleet-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PEDIDOS -->
+<div class="content" id="tab-pedidos" style="flex-direction:column">
+  <div class="toolbar">
+    <input class="search-box" type="text" placeholder="Buscar pedido, destino o dron..." id="search-pedidos" oninput="renderPedidos()">
+    <button class="btn primary" onclick="openModal('pedido')">+ Nuevo pedido</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Destino</th><th>Producto</th><th>Dron</th><th>Estado</th><th>Peso kg</th><th>Acc.</th></tr></thead>
+      <tbody id="pedidos-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- DRONES -->
+<div class="content" id="tab-drones" style="flex-direction:column">
+  <div class="toolbar"><button class="btn success" onclick="openModal('drone')">+ Agregar dron</button></div>
+  <div class="drones-grid" id="drones-grid"></div>
+</div>
+
+<!-- INVENTARIO -->
+<div class="content" id="tab-inventario" style="flex-direction:column">
+  <div class="toolbar"><button class="btn success" onclick="openModal('producto')">+ Agregar producto</button></div>
+  <div class="inv-grid" id="inv-grid"></div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-pedido">
+<div class="modal"><div class="modal-bar"></div><h3>Agregar / Editar Pedido</h3>
+  <div class="field"><label>ID del Pedido</label><input id="p-id" placeholder="ej. P-007"></div>
+  <div class="field"><label>Destino</label><input id="p-dest" placeholder="ej. Barrio El Pando"></div>
+  <div class="field"><label>Producto</label><select id="p-prod"><option value="">Seleccionar...</option></select></div>
+  <div class="field"><label>Dron asignado</label><select id="p-dron"><option value="">Sin asignar</option></select></div>
+  <div class="field"><label>Estado</label><select id="p-estado"><option value="pendiente">Pendiente</option><option value="en-vuelo">En vuelo</option><option value="entregado">Entregado</option><option value="cancelado">Cancelado</option></select></div>
+  <div class="field"><label>Peso total (kg)</label><input id="p-peso" type="number" step="0.1" placeholder="2.5"></div>
+  <div class="modal-actions"><button class="btn" onclick="closeModal('pedido')">Cancelar</button><button class="btn primary" onclick="savePedido()">Confirmar</button></div>
+</div></div>
+
+<div class="modal-overlay" id="modal-drone">
+<div class="modal"><div class="modal-bar"></div><h3>Agregar / Editar Dron</h3>
+  <div class="field"><label>ID del Drone</label><input id="d-id" placeholder="ej. D-06"></div>
+  <div class="field"><label>Estado inicial</label><select id="d-estado"><option value="espera">En espera</option><option value="en-vuelo">En vuelo</option><option value="mantenimiento">Mantenimiento</option></select></div>
+  <div class="field"><label>Batería inicial (%)</label><input id="d-bat" type="number" min="0" max="100" value="100"></div>
+  <div class="field"><label>Modelo</label><input id="d-modelo" placeholder="ej. DJI Phantom 4"></div>
+  <div class="modal-actions"><button class="btn" onclick="closeModal('drone')">Cancelar</button><button class="btn primary" onclick="saveDrone()">Confirmar</button></div>
+</div></div>
+
+<div class="modal-overlay" id="modal-producto">
+<div class="modal"><div class="modal-bar"></div><h3>Agregar / Editar Producto</h3>
+  <div class="field"><label>Nombre del producto</label><input id="pr-nombre" placeholder="ej. Paquete Frágil"></div>
+  <div class="field"><label>Stock inicial</label><input id="pr-stock" type="number" value="10"></div>
+  <div class="field"><label>Peso unitario (kg)</label><input id="pr-peso" type="number" step="0.1" value="1.5"></div>
+  <div class="field"><label>Zona de almacenamiento</label><input id="pr-zona" placeholder="ej. Almacén Central"></div>
+  <div class="field"><label>Categoría</label><select id="pr-cat"><option>General</option><option>Frágil</option><option>Medicamentos</option><option>Alimentos</option><option>Electrónica</option></select></div>
+  <div class="modal-info">⚠ Stock crítico si &lt; 5 — alerta automática</div>
+  <div class="modal-actions"><button class="btn" onclick="closeModal('producto')">Cancelar</button><button class="btn success" onclick="saveProducto()">Confirmar</button></div>
+</div></div>
+</div>
+
+<script>
+// ---- DATA ----
+let drones=[
+  {id:'D-01',estado:'en-vuelo',bat:78,modelo:'DJI Mavic 3'},
+  {id:'D-02',estado:'espera',bat:92,modelo:'DJI Phantom 4'},
+  {id:'D-03',estado:'en-vuelo',bat:24,modelo:'Autel EVO II'},
+  {id:'D-04',estado:'mantenimiento',bat:45,modelo:'Skydio 2+'},
+  {id:'D-05',estado:'espera',bat:100,modelo:'DJI Mini 3 Pro'},
+];
+let pedidos=[
+  {id:'P-001',destino:'Barrio Los Olivos',producto:'Medicamentos Express',dron:'D-01',estado:'en-vuelo',peso:1.2},
+  {id:'P-002',destino:'Zona Portuaria',producto:'Paquete Frágil',dron:'',estado:'entregado',peso:3.0},
+  {id:'P-003',destino:'Centro Histórico',producto:'Suministros Médicos',dron:'D-03',estado:'en-vuelo',peso:0.8},
+  {id:'P-004',destino:'El Rodadero',producto:'Electrónica',dron:'',estado:'pendiente',peso:2.1},
+];
+let productos=[
+  {nombre:'Medicamentos Express',stock:12,peso:0.5,zona:'Almacén A',cat:'Medicamentos'},
+  {nombre:'Paquete Frágil',stock:3,peso:1.5,zona:'Almacén Central',cat:'Frágil'},
+  {nombre:'Suministros Médicos',stock:8,peso:0.8,zona:'Almacén A',cat:'Medicamentos'},
+  {nombre:'Electrónica',stock:4,peso:2.0,zona:'Almacén B',cat:'Electrónica'},
+  {nombre:'Alimentos Frescos',stock:15,peso:3.0,zona:'Frigorífico',cat:'Alimentos'},
+];
+let activity=[
+  {tipo:'green',msg:'D-01 despegó → Barrio Los Olivos',t:Date.now()-40000},
+  {tipo:'green',msg:'D-03 en ruta → Centro Histórico',t:Date.now()-90000},
+  {tipo:'blue',msg:'P-002 entregado en Zona Portuaria',t:Date.now()-200000},
+  {tipo:'warn',msg:'D-03 batería al 24%',t:Date.now()-10000},
+  {tipo:'danger',msg:'Stock crítico: Paquete Frágil (3 uds)',t:Date.now()-5000},
+];
+let editingPedido=null,editingDrone=null,editingProducto=null;
+
+// ---- MAP ENGINE ----
+const BASE={x:400,y:220};
+const WAYPOINTS={
+  'Base UCC':          {x:400,y:220},
+  'Barrio Los Olivos': {x:200,y:120},
+  'Zona Portuaria':    {x:580,y:150},
+  'Centro Histórico':  {x:310,y:310},
+  'El Rodadero':       {x:550,y:340},
+  'Barrio El Pando':   {x:160,y:260},
+  'La Quinta':         {x:450,y:80},
+};
+const LANDMARKS=[
+  {x:400,y:220,label:'Base UCC',icon:'◈',col:'#3b82f6'},
+  {x:200,y:120,label:'Los Olivos',icon:'⬡'},
+  {x:580,y:150,label:'Portuaria',icon:'⬡'},
+  {x:310,y:310,label:'C. Histórico',icon:'⬡'},
+  {x:550,y:340,label:'El Rodadero',icon:'⬡'},
+];
+
+let droneMapState={};
+function initDroneMap(){
+  drones.forEach(d=>{
+    if(d.estado==='en-vuelo'){
+      const p=pedidos.find(p=>p.dron===d.id&&p.estado==='en-vuelo');
+      const dest=p?WAYPOINTS[p.destino]||WAYPOINTS['Barrio Los Olivos']:WAYPOINTS['Barrio Los Olivos'];
+      droneMapState[d.id]={
+        x:BASE.x,y:BASE.y,
+        tx:dest.x,ty:dest.y,
+        prog:Math.random()*0.4,
+        destLabel:p?p.destino:'?',
+        trail:[],
+        returning:false,
+        waitTick:0,
+      };
+    }
+  });
+}
+initDroneMap();
+
+let canvas,ctx,mapSec,animFrame;
+function resizeCanvas(){
+  if(!canvas||!mapSec)return;
+  const h=mapSec.clientHeight-40;
+  canvas.width=mapSec.clientWidth;
+  canvas.height=Math.max(h,200);
+}
+
+function drawMap(){
+  if(!canvas||!ctx)return;
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // ocean bg
+  ctx.fillStyle='#0d1b2e';
+  ctx.fillRect(0,0,W,H);
+
+  // grid lines
+  ctx.strokeStyle='rgba(59,130,246,.07)';
+  ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // scale map coords to canvas
+  const sx=W/800,sy=H/460;
+  function sc(px,py){return{x:px*sx,y:py*sy};}
+
+  // draw routes (dashed)
+  Object.entries(droneMapState).forEach(([id,s])=>{
+    if(s.prog<1){
+      const a=sc(BASE.x,BASE.y),b=sc(s.tx,s.ty);
+      ctx.save();
+      ctx.setLineDash([4,6]);
+      ctx.strokeStyle='rgba(59,130,246,.25)';
+      ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      ctx.restore();
+    }
+  });
+
+  // draw trails
+  Object.entries(droneMapState).forEach(([id,s])=>{
+    if(s.trail.length>1){
+      ctx.save();
+      ctx.strokeStyle='rgba(16,185,129,.5)';
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      s.trail.forEach((pt,i)=>{
+        const p=sc(pt.x,pt.y);
+        if(i===0)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y);
+      });
+      ctx.stroke();
+      ctx.restore();
+    }
+  });
+
+  // landmarks
+  LANDMARKS.forEach(lm=>{
+    const p=sc(lm.x,lm.y);
+    ctx.save();
+    if(lm.col){
+      ctx.fillStyle=lm.col;
+      ctx.font='bold 13px sans-serif';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText(lm.icon,p.x,p.y);
+      ctx.fillStyle='#3b82f6';
+      ctx.font='9px Courier New';
+      ctx.fillText(lm.label,p.x,p.y+13);
+    } else {
+      ctx.fillStyle='rgba(255,255,255,.2)';
+      ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.5)';
+      ctx.font='9px Courier New';
+      ctx.textAlign='center';
+      ctx.fillText(lm.label,p.x,p.y+13);
+    }
+    ctx.restore();
+  });
+
+  // draw drones
+  const tick=Date.now()/1000;
+  Object.entries(droneMapState).forEach(([id,s])=>{
+    const p=sc(s.x,s.y);
+    const droneData=drones.find(d=>d.id===id);
+    const isBatLow=droneData&&droneData.bat<30;
+
+    // pulse ring
+    const pr=8+4*Math.sin(tick*3);
+    ctx.save();
+    ctx.strokeStyle=isBatLow?'rgba(239,68,68,.4)':'rgba(16,185,129,.35)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(p.x,p.y,pr,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+
+    // drone body
+    const dx=s.tx-s.x,dy=s.ty-s.y;
+    const ang=Math.atan2(dy,dx);
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    ctx.rotate(ang);
+    // body
+    ctx.fillStyle=isBatLow?'#ef4444':'#10b981';
+    ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(-5,4);ctx.lineTo(-5,-4);ctx.closePath();ctx.fill();
+    // propellers
+    ctx.strokeStyle='rgba(255,255,255,.6)';
+    ctx.lineWidth=1;
+    [[-3,-5],[3,-5],[3,5],[-3,5]].forEach(([ox,oy])=>{
+      ctx.beginPath();ctx.arc(ox,oy,3,0,Math.PI*2);ctx.stroke();
+    });
+    ctx.restore();
+
+    // label
+    const prog=Math.round(s.prog*100);
+    ctx.save();
+    ctx.fillStyle='rgba(10,14,26,.8)';
+    const lw=ctx.measureText(id).width+20;
+    ctx.beginPath();ctx.roundRect(p.x-lw/2,p.y-28,lw,16,3);ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.font='bold 9px Courier New';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(`${id} ${prog}%`,p.x,p.y-20);
+    ctx.restore();
+
+    // destination label near dest
+    if(s.prog<0.95&&s.prog>0.05){
+      const dp=sc(s.tx,s.ty);
+      ctx.save();
+      ctx.fillStyle='rgba(16,185,129,.8)';
+      ctx.font='8px Courier New';
+      ctx.textAlign='center';
+      ctx.fillText(`→ ${s.destLabel}`,dp.x,dp.y-14);
+      ctx.restore();
+    }
+  });
+
+  // progress bars bottom-left
+  let yi=10;
+  Object.entries(droneMapState).forEach(([id,s])=>{
+    const droneData=drones.find(d=>d.id===id);
+    const prog=Math.round(s.prog*100);
+    ctx.save();
+    ctx.fillStyle='rgba(10,14,26,.75)';
+    ctx.beginPath();ctx.roundRect(10,yi,160,22,4);ctx.fill();
+    ctx.fillStyle=droneData&&droneData.bat<30?'#ef4444':'#10b981';
+    ctx.font='bold 9px Courier New';
+    ctx.textAlign='left';
+    ctx.textBaseline='middle';
+    ctx.fillText(id,16,yi+8);
+    ctx.fillStyle='rgba(255,255,255,.3)';
+    ctx.beginPath();ctx.roundRect(50,yi+5,110,7,3);ctx.fill();
+    ctx.fillStyle=prog>50?'#10b981':prog>25?'#f59e0b':'#ef4444';
+    ctx.beginPath();ctx.roundRect(50,yi+5,110*(prog/100),7,3);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.6)';
+    ctx.textAlign='right';
+    ctx.fillText(prog+'%',168,yi+8);
+    ctx.restore();
+    yi+=26;
+  });
+}
+
+let mapTick=0;
+function stepDrones(){
+  const SPEED=0.003;
+  drones.forEach(d=>{
+    if(d.estado!=='en-vuelo')return;
+    if(!droneMapState[d.id]){
+      const p=pedidos.find(p=>p.dron===d.id&&p.estado==='en-vuelo');
+      const dest=p?WAYPOINTS[p.destino]||WAYPOINTS['El Rodadero']:WAYPOINTS['El Rodadero'];
+      droneMapState[d.id]={x:BASE.x,y:BASE.y,tx:dest.x,ty:dest.y,prog:0,destLabel:p?p.destino:'?',trail:[],returning:false,waitTick:0};
+    }
+    const s=droneMapState[d.id];
+    if(s.prog>=1){
+      s.waitTick=(s.waitTick||0)+1;
+      if(s.waitTick>60){
+        // return to base
+        s.tx=BASE.x;s.ty=BASE.y;
+        s.prog=0;s.trail=[];s.returning=!s.returning;
+        s.waitTick=0;
+        if(!s.returning){
+          activity.unshift({tipo:'blue',msg:`${d.id} regresó a base`,t:Date.now()});
+          if(activity.length>8)activity.pop();
+          renderActivity();
+        }
+      }
+      return;
+    }
+    s.prog=Math.min(1,s.prog+SPEED*(0.8+Math.random()*0.4));
+    const t=s.prog;
+    const cx=(BASE.x+s.tx)/2+(s.ty-BASE.y)*0.15;
+    const cy=(BASE.y+s.ty)/2-(s.tx-BASE.x)*0.15;
+    s.x=(1-t)*(1-t)*BASE.x+2*(1-t)*t*cx+t*t*s.tx;
+    s.y=(1-t)*(1-t)*BASE.y+2*(1-t)*t*cy+t*t*s.ty;
+    s.trail.push({x:s.x,y:s.y});
+    if(s.trail.length>80)s.trail.shift();
+    if(Math.round(t*100)===50){
+      activity.unshift({tipo:'green',msg:`${d.id} a mitad de ruta → ${s.destLabel}`,t:Date.now()});
+      if(activity.length>8)activity.pop();
+      renderActivity();
+    }
+  });
+  mapTick++;
+  document.getElementById('map-timestamp').textContent=`Actualizado hace ${Math.floor(mapTick/2)}s`;
+  drawMap();
+  animFrame=requestAnimationFrame(stepDrones);
+}
+
+function startMap(){
+  canvas=document.getElementById('mapCanvas');
+  if(!canvas)return;
+  ctx=canvas.getContext('2d');
+  mapSec=canvas.parentElement;
+  resizeCanvas();
+  if(animFrame)cancelAnimationFrame(animFrame);
+  stepDrones();
+}
+
+// ---- UI ----
+function clock(){const n=new Date();document.getElementById('clock').textContent=n.toTimeString().slice(0,8);}
+setInterval(clock,1000);clock();
+
+function switchTab(id,btn){
+  document.querySelectorAll('.content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='panel'){setTimeout(startMap,50);}
+  else{if(animFrame){cancelAnimationFrame(animFrame);animFrame=null;}}
+  renderAll();
+}
+
+function batColor(v){return v<30?'#ef4444':v<60?'#f59e0b':'#10b981'}
+
+function renderActivity(){
+  const log=document.getElementById('activity-log');
+  if(!log)return;
+  log.innerHTML=activity.slice(0,6).map(a=>{
+    const s=Math.floor((Date.now()-a.t)/1000);
+    const ts=s<60?s+'s':Math.floor(s/60)+'m';
+    return`<div class="alert-item"><div class="dot ${a.tipo}"></div><span style="flex:1">${a.msg}</span><span style="font-size:9px;color:var(--muted)">${ts}</span></div>`;
+  }).join('');
+}
+
+function renderFleet(){
+  const fl=document.getElementById('fleet-list');
+  if(!fl)return;
+  fl.innerHTML=drones.map(d=>{
+    const prog=droneMapState[d.id]?Math.round(droneMapState[d.id].prog*100):0;
+    const statusColors={'en-vuelo':'#10b981','espera':'#3b82f6','mantenimiento':'#f59e0b'};
+    const col=d.bat<30?'#ef4444':(statusColors[d.estado]||'#6b7280');
+    return`<div class="drone-mini">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="dot" style="background:${col}"></div>
+        <span style="color:#fff;font-weight:600">${d.id}</span>
+        <span style="font-size:9px;color:var(--muted)">${d.modelo}</span>
+      </div>
+      <div class="bat-mini">
+        ${d.estado==='en-vuelo'?`<span style="font-size:9px;color:${col}">${prog}%▶</span>`:''}
+        <div class="bat-bar-mini"><div class="bat-fill-mini" style="width:${d.bat}%;background:${batColor(d.bat)}"></div></div>
+        <span>${d.bat}%</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPanel(){
+  const enVuelo=drones.filter(d=>d.estado==='en-vuelo').length;
+  const batBaja=drones.filter(d=>d.bat<30).length;
+  const stk=productos.filter(p=>p.stock<5).length;
+  const pedAct=pedidos.filter(p=>p.estado==='en-vuelo'||p.estado==='pendiente').length;
+  document.getElementById('stat-ped').textContent=pedAct;
+  document.getElementById('stat-vuelo').textContent=enVuelo;
+  document.getElementById('stat-tot').textContent=drones.length;
+  document.getElementById('stat-bat').textContent=batBaja;
+  document.getElementById('stat-stk').textContent=stk;
+  renderActivity();renderFleet();
+}
+
+function renderPedidos(){
+  const q=(document.getElementById('search-pedidos')||{}).value||'';
+  const f=pedidos.filter(p=>p.id.toLowerCase().includes(q.toLowerCase())||p.destino.toLowerCase().includes(q.toLowerCase())||p.dron.toLowerCase().includes(q.toLowerCase()));
+  const estados={'en-vuelo':'<span class="badge en-vuelo">▶ En vuelo</span>','entregado':'<span class="badge entregado">✓ Entregado</span>','pendiente':'<span class="badge pendiente">◉ Pendiente</span>','cancelado':'<span class="badge cancelado">✕ Cancelado</span>'};
+  document.getElementById('pedidos-tbody').innerHTML=f.map(p=>`<tr>
+    <td style="color:#60a5fa;font-weight:600">${p.id}</td><td>${p.destino}</td><td>${p.producto}</td>
+    <td>${p.dron||'<span style="color:var(--muted)">Sin asignar</span>'}</td>
+    <td>${estados[p.estado]||p.estado}</td><td>${p.peso}</td>
+    <td><div style="display:flex;gap:4px"><button class="icon-btn" onclick="editPedido(${pedidos.indexOf(p)})">✎</button><button class="icon-btn del" onclick="deletePedido(${pedidos.indexOf(p)})">✕</button></div></td>
+  </tr>`).join('');
+}
+
+function renderDrones(){
+  document.getElementById('drones-grid').innerHTML=drones.map((d,i)=>{
+    const cols={'en-vuelo':'#10b981','espera':'#3b82f6','mantenimiento':'#f59e0b'};
+    const col=d.bat<30?'#ef4444':(cols[d.estado]||'#6b7280');
+    const lbl={'en-vuelo':'▶ En vuelo','espera':'◉ En espera','mantenimiento':'⚙ Mantenimiento'}[d.estado]||d.estado;
+    return`<div class="drone-card" style="border-top:2px solid ${col}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div><div class="drone-id">${d.id}</div><div class="drone-model">${d.modelo}</div></div>
+        <div style="display:flex;gap:4px"><button class="icon-btn" onclick="editDrone(${i})">✎</button><button class="icon-btn del" onclick="deleteDrone(${i})">✕</button></div>
+      </div>
+      <div class="bat-bar"><div class="bat-fill" style="width:${d.bat}%;background:${batColor(d.bat)}"></div></div>
+      <div class="bat-text">Batería: ${d.bat}%</div>
+      <div style="display:flex;align-items:center;gap:5px;margin-top:7px;font-size:10px"><div class="dot" style="background:${col}"></div><span style="color:${col}">${lbl}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderInventario(){
+  document.getElementById('inv-grid').innerHTML=productos.map((p,i)=>`
+    <div class="inv-card" style="border-left:3px solid ${p.stock<5?'#ef4444':p.stock<10?'#f59e0b':'#10b981'}">
+      <div class="inv-name">${p.nombre}</div><div class="inv-cat">${p.cat}</div>
+      <div class="inv-row"><span>Stock</span><span style="color:${p.stock<5?'#f59e0b':'#10b981'}">${p.stock} uds${p.stock<5?' ⚠':''}</span></div>
+      <div class="inv-row"><span>Peso</span><span>${p.peso} kg</span></div>
+      <div class="inv-row"><span>Zona</span><span>${p.zona}</span></div>
+      <div style="margin-top:8px;display:flex;gap:4px"><button class="icon-btn" onclick="editProducto(${i})">✎</button><button class="icon-btn del" onclick="deleteProducto(${i})">✕</button></div>
+    </div>`).join('');
+}
+
+function renderAll(){renderPanel();renderPedidos();renderDrones();renderInventario();}
+
+// MODALS
+function openModal(tipo){
+  if(tipo==='pedido'){editingPedido=null;document.getElementById('p-id').value='';document.getElementById('p-dest').value='';document.getElementById('p-peso').value='';document.getElementById('p-estado').value='pendiente';
+    document.getElementById('p-prod').innerHTML='<option value="">Seleccionar...</option>'+productos.map(p=>`<option>${p.nombre}</option>`).join('');
+    document.getElementById('p-dron').innerHTML='<option value="">Sin asignar</option>'+drones.map(d=>`<option>${d.id}</option>`).join('');}
+  if(tipo==='drone'){editingDrone=null;document.getElementById('d-id').value='';document.getElementById('d-bat').value=100;document.getElementById('d-modelo').value='';document.getElementById('d-estado').value='espera';}
+  if(tipo==='producto'){editingProducto=null;document.getElementById('pr-nombre').value='';document.getElementById('pr-stock').value=10;document.getElementById('pr-peso').value=1.5;document.getElementById('pr-zona').value='';document.getElementById('pr-cat').value='General';}
+  document.getElementById('modal-'+tipo).classList.add('open');
+}
+function closeModal(tipo){document.getElementById('modal-'+tipo).classList.remove('open');}
+
+function editPedido(i){const p=pedidos[i];editingPedido=i;document.getElementById('p-id').value=p.id;document.getElementById('p-dest').value=p.destino;document.getElementById('p-peso').value=p.peso;document.getElementById('p-estado').value=p.estado;document.getElementById('p-prod').innerHTML='<option value="">Seleccionar...</option>'+productos.map(pr=>`<option${pr.nombre===p.producto?' selected':''}>${pr.nombre}</option>`).join('');document.getElementById('p-dron').innerHTML='<option value="">Sin asignar</option>'+drones.map(d=>`<option${d.id===p.dron?' selected':''}>${d.id}</option>`).join('');document.getElementById('modal-pedido').classList.add('open');}
+function deletePedido(i){activity.unshift({tipo:'blue',msg:`Pedido ${pedidos[i].id} eliminado`,t:Date.now()});pedidos.splice(i,1);renderAll();}
+function savePedido(){const obj={id:document.getElementById('p-id').value||'P-?',destino:document.getElementById('p-dest').value||'Sin destino',producto:document.getElementById('p-prod').value||'',dron:document.getElementById('p-dron').value||'',estado:document.getElementById('p-estado').value,peso:parseFloat(document.getElementById('p-peso').value)||0};if(editingPedido!==null)pedidos[editingPedido]=obj;else pedidos.push(obj);activity.unshift({tipo:'green',msg:`Pedido ${obj.id} ${editingPedido!==null?'actualizado':'creado'}`,t:Date.now()});closeModal('pedido');renderAll();}
+function editDrone(i){const d=drones[i];editingDrone=i;document.getElementById('d-id').value=d.id;document.getElementById('d-bat').value=d.bat;document.getElementById('d-modelo').value=d.modelo;document.getElementById('d-estado').value=d.estado;document.getElementById('modal-drone').classList.add('open');}
+function deleteDrone(i){activity.unshift({tipo:'warn',msg:`Dron ${drones[i].id} eliminado`,t:Date.now()});delete droneMapState[drones[i].id];drones.splice(i,1);renderAll();}
+function saveDrone(){const obj={id:document.getElementById('d-id').value||'D-?',estado:document.getElementById('d-estado').value,bat:parseInt(document.getElementById('d-bat').value)||100,modelo:document.getElementById('d-modelo').value||'Desconocido'};if(editingDrone!==null)drones[editingDrone]=obj;else drones.push(obj);if(obj.estado==='en-vuelo'&&!droneMapState[obj.id]){droneMapState[obj.id]={x:BASE.x,y:BASE.y,tx:BASE.x+100,ty:BASE.y-80,prog:0,destLabel:'Ruta',trail:[],returning:false,waitTick:0};}activity.unshift({tipo:'green',msg:`Dron ${obj.id} ${editingDrone!==null?'actualizado':'agregado'}`,t:Date.now()});closeModal('drone');renderAll();}
+function editProducto(i){const p=productos[i];editingProducto=i;document.getElementById('pr-nombre').value=p.nombre;document.getElementById('pr-stock').value=p.stock;document.getElementById('pr-peso').value=p.peso;document.getElementById('pr-zona').value=p.zona;document.getElementById('pr-cat').value=p.cat;document.getElementById('modal-producto').classList.add('open');}
+function deleteProducto(i){activity.unshift({tipo:'blue',msg:`Producto "${productos[i].nombre}" eliminado`,t:Date.now()});productos.splice(i,1);renderAll();}
+function saveProducto(){const obj={nombre:document.getElementById('pr-nombre').value||'Sin nombre',stock:parseInt(document.getElementById('pr-stock').value)||0,peso:parseFloat(document.getElementById('pr-peso').value)||0,zona:document.getElementById('pr-zona').value||'Sin zona',cat:document.getElementById('pr-cat').value};if(obj.stock<5)activity.unshift({tipo:'danger',msg:`Stock crítico: ${obj.nombre} (${obj.stock} uds)`,t:Date.now()});if(editingProducto!==null)productos[editingProducto]=obj;else productos.push(obj);activity.unshift({tipo:'green',msg:`Producto "${obj.nombre}" ${editingProducto!==null?'actualizado':'agregado'}`,t:Date.now()});closeModal('producto');renderAll();}
+
+document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
+
+// Boot
+renderAll();
+setTimeout(()=>{startMap();setInterval(()=>{renderFleet();},1000);},100);
+window.addEventListener('resize',()=>{resizeCanvas();drawMap();});
+</script>
